@@ -1,5 +1,4 @@
 const std = @import("std");
-const mem = std.mem;
 const testing = std.testing;
 
 pub const Jenkins = struct {
