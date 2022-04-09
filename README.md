@@ -8,3 +8,4 @@ The hash functions are:
 - Jenkins
 - Pearson
 - PJW
+- SuperFast
