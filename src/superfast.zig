@@ -7,7 +7,7 @@ pub const SuperFast = struct {
         if (bytes.len == 0) return 0;
         var result: u32 = bytes.len;
         var temp: u32 = 0;
-        var remainder: u32 = bytes.len % 4;
+        const remainder: u32 = bytes.len % 4;
         const take = (bytes.len/4)*4;
         
         const cast = mem.bytesAsSlice(u16, bytes[0..take]);

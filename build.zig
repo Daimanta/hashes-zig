@@ -1,21 +1,14 @@
 const std = @import("std");
 const version = @import("version.zig");
 const builtin = std.builtin;
+const Builder = std.Build;
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *Builder) void {
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
 
-    b.setPreferredReleaseMode(builtin.Mode.ReleaseSafe);
-    const mode = b.standardReleaseOptions();
-    
+    const module = b.addModule("hashes", .{.root_source_file = b.path("src/std.zig"), .target = target, .optimize = optimize});
 
-    const lib = b.addStaticLibrary("hashes", "src/std.zig");
-    _ = b.version(version.major, version.minor, version.patch);
-    lib.setBuildMode(mode);
-    lib.install();
-
-    var main_tests = b.addTest("src/jenkins.zig");
-    main_tests.setBuildMode(mode);
-
-    const test_step = b.step("test", "Run library tests");
-    test_step.dependOn(&main_tests.step);
+    const lib = b.addLibrary(.{.name = "hashes", .root_module = module});
+    b.installArtifact(lib);
 }
