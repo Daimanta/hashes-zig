@@ -6,4 +6,5 @@ const loselose = @import("loselose.zig");
 const pearson = @import("pearson.zig");
 const pjw = @import("pjw.zig");
 const sdbm = @import("sdbm.zig");
+const spooky = @import("spooky.zig");
 const superfast = @import("superfast.zig");
