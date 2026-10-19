@@ -12,12 +12,7 @@ pub const SpookyHashContext = struct {
     m_remainder: u8,
 
     pub fn init() SpookyHashContext {
-        const result = SpookyHashContext{
-            .m_data = [1]u64{0} ** (2 * SPOOKYHASH_VARIABLES),
-            .m_state = [1]u64{0} ** SPOOKYHASH_VARIABLES,
-            .m_length = 0,
-            .m_remainder = 0
-        };
+        const result = SpookyHashContext{ .m_data = @splat(0), .m_state = @splat(0), .m_length = 0, .m_remainder = 0 };
         return result;
     }
 
@@ -28,7 +23,7 @@ pub const SpookyHashContext = struct {
         return result;
     }
 
-    pub fn update(self: *SpookyHashContext, data:[]const u8) void {
+    pub fn update(self: *SpookyHashContext, data: []const u8) void {
         const new_length = self.m_remainder + data.len;
         if (new_length < SPOOKYHASH_BUFFER_SIZE) {
             var buf8: []u8 = @ptrCast(self.m_data[0..]);
@@ -94,16 +89,16 @@ pub const SpookyHashContext = struct {
         const data64: []align(1) const u64 = @ptrCast(data[start_index..]);
         var i: usize = 0;
         const limit = remaining_length / SPOOKYHASH_BLOCK_SIZE;
-        while (i < limit): (i += 1) {
+        while (i < limit) : (i += 1) {
             const j = i * 12;
-            spookyhash_mix(data64[j..j+12], &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9, &h10, &h11);
+            spookyhash_mix(data64[j .. j + 12], &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9, &h10, &h11);
         }
 
-        const remainder = (remaining_length - (limit*SPOOKYHASH_BLOCK_SIZE));
+        const remainder = (remaining_length - (limit * SPOOKYHASH_BLOCK_SIZE));
         self.m_remainder = @intCast(remainder);
 
         var self_data8: []u8 = @ptrCast(self.m_data[0..]);
-        @memcpy(self_data8[0..remainder], data[data.len - remainder..]);
+        @memcpy(self_data8[0..remainder], data[data.len - remainder ..]);
 
         self.m_state[0] = h0;
         self.m_state[1] = h1;
@@ -162,13 +157,9 @@ pub const SpookyHashContext = struct {
 
         return Spooky128Result{ .hash1 = h0, .hash2 = h1 };
     }
-
 };
 
-pub const Spooky128Result = struct {
-    hash1: u64,
-    hash2: u64
-};
+pub const Spooky128Result = struct { hash1: u64, hash2: u64 };
 
 pub fn spookyhash_32(data: []const u8, seed: u32) u32 {
     const result = spookyhash_128(data, seed, seed);
@@ -197,23 +188,23 @@ pub fn spookyhash_128(data: []const u8, seed1: u64, seed2: u64) Spooky128Result 
     var h10: u64 = seed2;
     var h11: u64 = SPOOKYHASH_CONSTANT;
 
-    const data_64: []align(1) const u64 = @ptrCast(data[0..((data.len/8)*8)]);
+    const data_64: []align(1) const u64 = @ptrCast(data[0..((data.len / 8) * 8)]);
     var i: usize = 0;
     const limit = data.len / SPOOKYHASH_BLOCK_SIZE;
-    while (i < limit): (i += 1) {
+    while (i < limit) : (i += 1) {
         const j = i * 12;
-        spookyhash_mix(data_64[j..j+12], &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9, &h10, &h11);
+        spookyhash_mix(data_64[j .. j + 12], &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9, &h10, &h11);
     }
 
     const remainder = data.len - (i * SPOOKYHASH_BLOCK_SIZE);
     const start_index = data.len - remainder;
-    var buf: [SPOOKYHASH_VARIABLES]u64 = [1]u64{0} ** SPOOKYHASH_VARIABLES;
+    var buf: [SPOOKYHASH_VARIABLES]u64 = @splat(0);
     var buf8: []u8 = @ptrCast(buf[0..]);
     @memcpy(buf8[0..remainder], data[start_index..]);
     buf8[buf8.len - 1] = @intCast(remainder);
 
     spookyhash_end(buf, &h0, &h1, &h2, &h3, &h4, &h5, &h6, &h7, &h8, &h9, &h10, &h11);
-    return Spooky128Result{.hash1 = h0, .hash2 = h1};
+    return Spooky128Result{ .hash1 = h0, .hash2 = h1 };
 }
 
 fn spookyhash_short(data: []const u8, seed1: u64, seed2: u64) Spooky128Result {
@@ -226,10 +217,10 @@ fn spookyhash_short(data: []const u8, seed1: u64, seed2: u64) Spooky128Result {
 
     var i: usize = 0;
     if (data.len > 15) {
-        const cast:[] align(1) const u64 = @ptrCast(data[0..((data.len/8)*8)]);
+        const cast: []align(1) const u64 = @ptrCast(data[0..((data.len / 8) * 8)]);
         const end = (data.len / 32) * 4;
 
-        while (i < end): (i += 4) {
+        while (i < end) : (i += 4) {
             c +%= cast[i];
             d +%= cast[i + 1];
             spookyhash_short_mix(&a, &b, &c, &d);
@@ -248,8 +239,8 @@ fn spookyhash_short(data: []const u8, seed1: u64, seed2: u64) Spooky128Result {
 
     const start_index = i * 8;
     const remaining_data8 = data[start_index..];
-    const remaining_data32: [] align(1) const u32 = @ptrCast(remaining_data8[0..((remaining_data8.len/4)*4)]);
-    const remaining_data64: [] align(1) const u64 = @ptrCast(remaining_data8[0..((remaining_data8.len/8)*8)]);
+    const remaining_data32: []align(1) const u32 = @ptrCast(remaining_data8[0..((remaining_data8.len / 4) * 4)]);
+    const remaining_data64: []align(1) const u64 = @ptrCast(remaining_data8[0..((remaining_data8.len / 8) * 8)]);
 
     d +%= data.len << 56;
     if (remainder == 15) {
@@ -316,8 +307,7 @@ fn spookyhash_short(data: []const u8, seed1: u64, seed2: u64) Spooky128Result {
 
     spookyhash_short_end(&a, &b, &c, &d);
 
-    return Spooky128Result{.hash1 = a, .hash2 = b};
-
+    return Spooky128Result{ .hash1 = a, .hash2 = b };
 }
 
 fn spookyhash_end(data: [SPOOKYHASH_VARIABLES]u64, h0: *u64, h1: *u64, h2: *u64, h3: *u64, h4: *u64, h5: *u64, h6: *u64, h7: *u64, h8: *u64, h9: *u64, h10: *u64, h11: *u64) void {
@@ -338,7 +328,7 @@ fn spookyhash_end(data: [SPOOKYHASH_VARIABLES]u64, h0: *u64, h1: *u64, h2: *u64,
     spookyhash_end_partial(h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11);
 }
 
-fn spookyhash_end_partial( h0: *u64, h1: *u64, h2: *u64, h3: *u64, h4: *u64, h5: *u64, h6: *u64, h7: *u64, h8: *u64, h9: *u64, h10: *u64, h11: *u64) void {
+fn spookyhash_end_partial(h0: *u64, h1: *u64, h2: *u64, h3: *u64, h4: *u64, h5: *u64, h6: *u64, h7: *u64, h8: *u64, h9: *u64, h10: *u64, h11: *u64) void {
     h11.* +%= h1.*;
     h2.* ^= h11.*;
     SPOOKYHASH_ROTATE(h1, 44);
@@ -377,7 +367,7 @@ fn spookyhash_end_partial( h0: *u64, h1: *u64, h2: *u64, h3: *u64, h4: *u64, h5:
     SPOOKYHASH_ROTATE(h0, 54);
 }
 
-fn spookyhash_mix(data: []const align(1) u64, s0: *u64, s1: *u64, s2: *u64, s3: *u64, s4: *u64, s5: *u64, s6: *u64, s7: *u64, s8: *u64, s9: *u64, s10: *u64, s11: *u64) void {
+fn spookyhash_mix(data: []align(1) const u64, s0: *u64, s1: *u64, s2: *u64, s3: *u64, s4: *u64, s5: *u64, s6: *u64, s7: *u64, s8: *u64, s9: *u64, s10: *u64, s11: *u64) void {
     s0.* +%= data[0];
     s2.* ^= s10.*;
     s11.* ^= s0.*;
@@ -552,7 +542,7 @@ test "a x 64" {
 }
 
 test "a x 65" {
-    const str: []const u8 = "a" ** 65;
+    const str: []const u8 = &@as([65]u8, @splat('a'));
     const val32 = spookyhash_32(str, 0);
     const expected32 = 741746999;
     try std.testing.expectEqual(expected32, val32);
@@ -563,7 +553,7 @@ test "a x 65" {
 }
 
 test "a x 63" {
-    const str: []const u8 = "a" ** 63;
+    const str: []const u8 = &@as([63]u8, @splat('a'));
     const val32 = spookyhash_32(str, 0);
     const expected32 = 4253920923;
     try std.testing.expectEqual(expected32, val32);
@@ -574,7 +564,7 @@ test "a x 63" {
 }
 
 test "abcdefhijk x 10" {
-    const str: []const u8 = "abcdefhijk" ** 10;
+    const str: []const u8 = &repeat("abcdefhijk", 10);
     const val32 = spookyhash_32(str, 0);
     const expected32 = 2546498040;
     try std.testing.expectEqual(expected32, val32);
@@ -585,7 +575,7 @@ test "abcdefhijk x 10" {
 }
 
 test "a x 202" {
-    const str: []const u8 = "a" ** 202;
+    const str: []const u8 = &repeat("a", 202);
     const val32 = spookyhash_32(str, 0);
     const expected32 = 3263301973;
     try std.testing.expectEqual(expected32, val32);
@@ -596,8 +586,8 @@ test "a x 202" {
 }
 
 test "a x 202 with context" {
-    const a50: []const u8 = "a" ** 50;
-    const a2: []const u8 = "a" ** 2;
+    const a50: []const u8 = &repeat("a", 50);
+    const a2: []const u8 = &repeat("a", 2);
     var spookyhash_context = SpookyHashContext.init();
     spookyhash_context.update(a50);
     spookyhash_context.update(a50);
@@ -626,4 +616,17 @@ test "empty with context" {
 
     const expected64 = 2533000996631939353;
     try std.testing.expectEqual(expected64, final64);
+}
+
+fn repeat(comptime source: []const u8, comptime count: usize) [source.len * count]u8 {
+    var result: [source.len * count]u8 = undefined;
+
+    for (0..count) |i| {
+        @memcpy(
+            result[i * source.len ..][0..source.len],
+            source,
+        );
+    }
+
+    return result;
 }
